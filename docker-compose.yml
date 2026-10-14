@@ -55,7 +55,7 @@ services:
     depends_on:
       - web
 
-  # 5. cAdvisor (Thu thập thông số CPU, RAM của các container)
+  # 5. cAdvisor (Giám sát tài nguyên container)
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.47.0
     container_name: forum_cadvisor
@@ -69,7 +69,7 @@ services:
     networks:
       - frontend
 
-  # 6. Prometheus (Thu thập và lưu trữ metrics)
+  # 6. Prometheus (Thu thập metrics)
   prometheus:
     image: prom/prometheus:latest
     container_name: forum_prometheus
@@ -80,7 +80,7 @@ services:
     networks:
       - frontend
 
-  # 7. Grafana (Giao diện hiển thị biểu đồ giám sát)
+  # 7. Grafana (Giao diện hiển thị)
   grafana:
     image: grafana/grafana:latest
     container_name: forum_grafana
@@ -90,6 +90,31 @@ services:
       - frontend
     depends_on:
       - prometheus
+
+  # 8. Loki (Quản lý và lưu trữ Log)
+  loki:
+    image: grafana/loki:2.9.2
+    container_name: forum_loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/loki-config.yml
+    command: -config.file=/etc/loki/loki-config.yml
+    networks:
+      - frontend
+
+  # 9. Promtail (Thu gom Log qua Docker Socket)
+  promtail:
+    image: grafana/promtail:2.9.2
+    container_name: forum_promtail
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./promtail/config.yml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - frontend
+    depends_on:
+      - loki
 
 # Mạng nội bộ bảo mật
 networks:
